@@ -24,7 +24,7 @@ public class Organization {
     private String orgName;
     @Column(name = "org_desc", columnDefinition = "TEXT")
     private String orgDesc;
-    @Column(name = "owner_id")
+    @Column(name = "owner_id", nullable = false)
     private UUID ownerId;
     @Column(name = "org_address", nullable = false)
     private String orgAddress;
