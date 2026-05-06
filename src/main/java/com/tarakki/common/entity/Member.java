@@ -25,7 +25,7 @@ public class Member {
 
     @Id
     @GeneratedValue
-    @Column(name = "member_id", nullable = false, updatable = false)
+    @Column(name = "memberId", nullable = false, updatable = false)
     private UUID memberId;
 
     @Column(name = "first_name", nullable = false, length = 100)
