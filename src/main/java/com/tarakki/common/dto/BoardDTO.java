@@ -1,4 +1,4 @@
-package com.tarakki.boardtask.dto;
+package com.tarakki.common.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
