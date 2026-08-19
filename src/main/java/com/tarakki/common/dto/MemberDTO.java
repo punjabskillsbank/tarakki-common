@@ -19,11 +19,9 @@ public class MemberDTO {
 
     private UUID memberId;
 
-    @NotBlank
     @Size(max = 100)
     private String firstName;
 
-    @NotBlank
     @Size(max = 100)
     private String lastName;
 
