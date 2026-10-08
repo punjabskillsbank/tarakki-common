@@ -9,16 +9,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.EntityManager;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -72,7 +72,7 @@ class AuditLoggingAspectTest {
 
     @BeforeEach
     void setUp() {
-        RequestContextHolder.resetRequestAttributes();
+        SecurityContextHolder.clearContext();
         mockProducer = mock(AuditKafkaProducer.class);
         mockEntityManager = mock(EntityManager.class);
         unitAspect = new AuditLoggingAspect(mockProducer, objectMapper, mockEntityManager);
@@ -84,6 +84,11 @@ class AuditLoggingAspectTest {
         doReturn(TestEntity.class).when(mockAuditable).entityClass();
         when(mockAuditable.entityIdArgSpel()).thenReturn("#id");
         when(mockAuditable.entityIdResultSpel()).thenReturn("");
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     private ProceedingJoinPoint mockJoinPointWithArgs(Object... args) throws NoSuchMethodException {
@@ -149,11 +154,10 @@ class AuditLoggingAspectTest {
     }
 
     @Test
-    void shouldUseMemberIdFromRequestHeader() throws Throwable {
+    void shouldUseMemberIdFromAuthenticatedMember() throws Throwable {
         Long entityId = 1L;
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader(AuditTestDataFactory.MEMBER_ID_HEADER, AuditTestDataFactory.MEMBER_ID);
-        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken(AuditTestDataFactory.MEMBER_ID, null, "ROLE_USER"));
         when(mockEntityManager.find(TestEntity.class, entityId)).thenReturn(null);
 
         ProceedingJoinPoint joinPoint = mockJoinPointWithArgs(entityId);
@@ -168,11 +172,26 @@ class AuditLoggingAspectTest {
     }
 
     @Test
-    void shouldUseSystemForBlankMemberId() throws Throwable {
+    void shouldUseSystemWhenNobodyIsAuthenticated() throws Throwable {
         Long entityId = 1L;
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader(AuditTestDataFactory.MEMBER_ID_HEADER, " ");
-        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+        when(mockEntityManager.find(TestEntity.class, entityId)).thenReturn(null);
+
+        ProceedingJoinPoint joinPoint = mockJoinPointWithArgs(entityId);
+        when(joinPoint.proceed()).thenReturn(null);
+
+        unitAspect.logAuditActivity(joinPoint, mockAuditable);
+
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockProducer).sendAuditLog(messageCaptor.capture());
+        Map<?, ?> payload = objectMapper.readValue(messageCaptor.getValue(), Map.class);
+        assertEquals(AuditTestDataFactory.SYSTEM_ACTOR, payload.get("performed_by"));
+    }
+
+    @Test
+    void shouldUseSystemWhenAuthenticatedNameIsNotAMemberId() throws Throwable {
+        Long entityId = 1L;
+        SecurityContextHolder.getContext().setAuthentication(
+                new TestingAuthenticationToken(AuditTestDataFactory.NOT_A_MEMBER_ID, null, "ROLE_USER"));
         when(mockEntityManager.find(TestEntity.class, entityId)).thenReturn(null);
 
         ProceedingJoinPoint joinPoint = mockJoinPointWithArgs(entityId);
