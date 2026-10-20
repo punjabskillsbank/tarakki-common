@@ -1,6 +1,8 @@
 package com.tarakki.common.audit;
 
 public final class AuditTestDataFactory {
+    public static final Long ENTITY_ID = 1L;
+    public static final Long MISSING_ENTITY_ID = 999L;
     public static final String ENTITY_NAME = "TEST_ENTITY";
     public static final String EVENT_NAME = "ENTITY_DELETED";
     public static final String SYSTEM_ACTOR = "SYSTEM";

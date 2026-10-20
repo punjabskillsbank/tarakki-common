@@ -16,9 +16,6 @@ import java.util.UUID;
  */
 public final class CurrentMember {
 
-    private CurrentMember() {
-    }
-
     public static Optional<UUID> find() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 

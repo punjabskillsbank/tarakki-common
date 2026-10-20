@@ -103,7 +103,7 @@ class AuditLoggingAspectTest {
 
     @Test
     void shouldPopulateOldValueFromDbOnDelete() throws Throwable {
-        Long entityId = 1L;
+        Long entityId = AuditTestDataFactory.ENTITY_ID;
         TestEntity existingEntity = new TestEntity(entityId, "Test Name");
 
         when(mockEntityManager.find(TestEntity.class, entityId)).thenReturn(existingEntity).thenReturn(null);
@@ -137,7 +137,7 @@ class AuditLoggingAspectTest {
 
     @Test
     void shouldHandleMissingEntityGracefully() throws Throwable {
-        Long entityId = 999L;
+        Long entityId = AuditTestDataFactory.MISSING_ENTITY_ID;
         when(mockEntityManager.find(TestEntity.class, entityId)).thenReturn(null);
 
         ProceedingJoinPoint joinPoint = mockJoinPointWithArgs(entityId);
@@ -155,7 +155,7 @@ class AuditLoggingAspectTest {
 
     @Test
     void shouldUseMemberIdFromAuthenticatedMember() throws Throwable {
-        Long entityId = 1L;
+        Long entityId = AuditTestDataFactory.ENTITY_ID;
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(AuditTestDataFactory.MEMBER_ID, null, "ROLE_USER"));
         when(mockEntityManager.find(TestEntity.class, entityId)).thenReturn(null);
@@ -173,7 +173,7 @@ class AuditLoggingAspectTest {
 
     @Test
     void shouldUseSystemWhenNobodyIsAuthenticated() throws Throwable {
-        Long entityId = 1L;
+        Long entityId = AuditTestDataFactory.ENTITY_ID;
         when(mockEntityManager.find(TestEntity.class, entityId)).thenReturn(null);
 
         ProceedingJoinPoint joinPoint = mockJoinPointWithArgs(entityId);
@@ -189,7 +189,7 @@ class AuditLoggingAspectTest {
 
     @Test
     void shouldUseSystemWhenAuthenticatedNameIsNotAMemberId() throws Throwable {
-        Long entityId = 1L;
+        Long entityId = AuditTestDataFactory.ENTITY_ID;
         SecurityContextHolder.getContext().setAuthentication(
                 new TestingAuthenticationToken(AuditTestDataFactory.NOT_A_MEMBER_ID, null, "ROLE_USER"));
         when(mockEntityManager.find(TestEntity.class, entityId)).thenReturn(null);
