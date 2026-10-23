@@ -3,9 +3,9 @@ package com.tarakki.common.audit.aspect;
 import com.tarakki.common.audit.annotation.Auditable;
 import com.tarakki.common.audit.event.AuditEventMessage;
 import com.tarakki.common.audit.kafka.AuditKafkaProducer;
+import com.tarakki.common.security.CurrentMember;
 import tools.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -19,17 +19,14 @@ import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Aspect
 @Component
 @Slf4j
 public class AuditLoggingAspect {
-
-    private static final String MEMBER_ID_HEADER = "memberID";
 
     private final AuditKafkaProducer auditKafkaProducer;
     private final ObjectMapper objectMapper;
@@ -137,21 +134,8 @@ public class AuditLoggingAspect {
     }
 
     private String resolvePerformedBy() {
-        try {
-            ServletRequestAttributes attributes =
-                    (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attributes != null) {
-                HttpServletRequest request = attributes.getRequest();
-                if (request != null) {
-                    String memberId = request.getHeader(MEMBER_ID_HEADER);
-                    if (memberId != null && !memberId.isBlank()) {
-                        return memberId;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Could not resolve member ID from request header", e);
-        }
-        return "SYSTEM";
+        return CurrentMember.find()
+                .map(UUID::toString)
+                .orElse("SYSTEM");
     }
 }
